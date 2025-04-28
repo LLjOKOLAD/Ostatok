@@ -10,20 +10,31 @@ R = 4
 l = 2 * math.pi * R
 uc = 0
 
-coef_n2 = k / (c * 16)
-coef_const = (2 * alpha) / (c * R)
+def make_l(R):
+    return 2 * math.pi * R
 
-def Fi(n, t, x):
+# Коэффициент при n^2 в экспоненте
+def coef_n2(k, c, R):
+    l = make_l(R)
+    return k / c * (2 * math.pi / l) ** 2  # = k / (c * R^2)
+
+# Константный член в экспоненте (теплообмен с окруж. средой)
+def coef_const(alpha, c, R):
+    return (2 * alpha) / (c * R)
+
+def Fi(n, t, x, R, k, c, alpha):
+    l = make_l(R)
     if n == 0:
-        return math.exp(-0.00115 * t)
-    Bn = 2 / (math.pi * n)
-    return Bn * np.sin(n * x / 4) * np.exp(-t * (coef_n2 * (n ** 2) + coef_const))
+        return 0.5 * math.exp(-coef_const(alpha, c, R) * t)
+    Bn = -((-1)**n - 1) / (math.pi * n)
+    omega_n = 2 * math.pi * n / l
+    return Bn * np.sin(omega_n * x) * np.exp(-t * (coef_n2(k, c, R) * n ** 2 + coef_const(alpha, c, R)))
 
 def partial_sum(x, t, N):
-    result = Fi(0, t, x)  # нулевой член
-    for n in range(2, N + 1, 2):
-        result += Fi(n, t, x)
-    return uc + result
+    result = Fi(0, t, x, R, k, c, alpha)
+    for n in range(1, N + 1):
+        result += Fi(n, t, x, R, k, c, alpha)
+    return result
 
 # График 1: зависимость U(x0, t)
 def plot_temp_vs_time_multiple_x(x_list=[2.0, 5.0, 10.0], N=50):

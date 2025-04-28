@@ -1,38 +1,63 @@
 import tkinter as tk
 from tkinter import ttk, messagebox
 import matplotlib.pyplot as plt
+from fontTools.cu2qu.cu2qu import MAX_N
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import numpy as np
 import math
 
 # Расчёты
+# Длина кольца
+
 def make_l(R):
     return 2 * math.pi * R
 
-def coef_n2(k, c):
-    return k / (c * 16)
+# Коэффициент при n^2 в экспоненте
+def coef_n2(k, c, R):
+    l = make_l(R)
+    return k / c * (2 * math.pi / l) ** 2  # = k / (c * R^2)
 
+# Константный член в экспоненте (теплообмен с окруж. средой)
 def coef_const(alpha, c, R):
     return (2 * alpha) / (c * R)
 
+# Функция Фурье-компоненты с номером n
 def Fi(n, t, x, R, k, c, alpha):
+    l = make_l(R)
     if n == 0:
-        return math.exp(-0.00115 * t)
-    Bn = 2 / (math.pi * n)
-    return Bn * np.sin(n * x / 4) * np.exp(-t * (coef_n2(k, c) * n ** 2 + coef_const(alpha, c, R)))
+        return 0.5 * math.exp(-coef_const(alpha, c, R) * t)
+    Bn = -((-1)**n - 1) / (math.pi * n)
+    omega_n = 2 * math.pi * n / l
+    return Bn * np.sin(omega_n * x) * np.exp(-t * (coef_n2(k, c, R) * n ** 2 + coef_const(alpha, c, R)))
 
+# Частичная сумма ряда
 def SUM(x, t, N, R, k, c, alpha):
     result = Fi(0, t, x, R, k, c, alpha)
-    for n in range(2, N + 1, 2):
+    for n in range(1, N + 1):
         result += Fi(n, t, x, R, k, c, alpha)
     return result
 
+
+# Подбор N по модулю одного члена ряда
 def num_of_iter(eps, t, x, R, k, c, alpha):
-    n = 2
-    while abs(Fi(n, t, x, R, k, c, alpha)) > eps:
-        n += 2
+    MAX_N = 5000
+    if t == 0:
+        # При t=0 подбор N невозможен, ставим большое значение по умолчанию
+        return MAX_N
+    n = 1
+    while True:
+        l = make_l(R)
+        Bn = abs((-((-1)**n - 1)) / (math.pi * n))
+        exp_factor = math.exp(-t * (coef_n2(k, c, R) * n**2 + coef_const(alpha, c, R)))
+        term = Bn * exp_factor
+        if term <= eps:
+            break
+        n += 2  # только нечётные n
+        if n > MAX_N:
+            break
     return n
 
+# Уточнённый подбор N по разности сумм
 def num_of_iter_exp(eps, t, x, R, k, c, alpha):
     Neps = num_of_iter(eps, t, x, R, k, c, alpha)
     Nexp = Neps
@@ -40,16 +65,19 @@ def num_of_iter_exp(eps, t, x, R, k, c, alpha):
         Nexp -= 2
     return Nexp + 2
 
+# Общая функция частичной суммы
 def partial_sum(x, t, R, k, c, alpha, N=None, eps=None):
+    MIN_N = 5  # Минимальное количество членов для адекватного приближения
     if eps is not None:
-        N = num_of_iter_exp(eps, t, x, R, k, c, alpha)
+        N = max(num_of_iter(eps, t, x, R, k, c, alpha), MIN_N)
     result = Fi(0, t, x, R, k, c, alpha)
-    for n in range(2, N + 1, 2):
+    for n in range(1, N + 1):
         result += Fi(n, t, x, R, k, c, alpha)
     return result
 
+# Построение графика зависимости температуры от времени
 def plot_temp_vs_time(x_list, R, k, c, alpha, ax, N=None, eps=None, progress=None):
-    t_vals = np.linspace(0.01, 30, 300)
+    t_vals = np.linspace(0, 30, 300)
     ax.clear()
     for idx, x0 in enumerate(x_list):
         u_vals = [partial_sum(x0, t, R, k, c, alpha, N, eps) for t in t_vals]
@@ -63,6 +91,7 @@ def plot_temp_vs_time(x_list, R, k, c, alpha, ax, N=None, eps=None, progress=Non
     ax.legend()
     ax.grid(True)
 
+# Построение графика распределения температуры по координате
 def plot_temp_vs_x(t_list, R, k, c, alpha, ax, N=None, eps=None, progress=None):
     x_vals = np.linspace(0, make_l(R), 300)
     ax.clear()
@@ -77,6 +106,8 @@ def plot_temp_vs_x(t_list, R, k, c, alpha, ax, N=None, eps=None, progress=None):
     ax.set_ylabel("w(x, t₀)")
     ax.legend()
     ax.grid(True)
+
+
 
 # Основное окно
 root = tk.Tk()
@@ -99,7 +130,7 @@ control_frame.pack(side="right", fill="y")
 mode_options = {"w(x₀, t)": "time", "w(x, t₀)": "space"}
 mode_var = tk.StringVar(value="time")
 x_values = "0, 0.1, 2, 5, 10"
-t_values = "0.1, 0.5, 5, 10, 20"
+t_values = "0, 0.1, 0.5, 5, 10, 20"
 
 use_eps = tk.BooleanVar(value=False)
 
@@ -187,7 +218,6 @@ ttk.Label(control_frame, text="Точность ε:").pack(anchor="w")
 eps_entry.pack(anchor="w")
 
 ttk.Button(control_frame, text="Построить график", command=run_plot).pack(pady=20)
-
 ttk.Button(control_frame, text="Настроить параметры", command=toggle_constants).pack(pady=(10, 5))
 
 constants_frame = ttk.Frame(control_frame)

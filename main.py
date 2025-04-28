@@ -9,43 +9,54 @@ R = 4
 l = 2 * math.pi * R
 
 
-coef_n2 = k / (c * 16)
-coef_const = (2 * alpha) / (c * R)
+def make_l(R):
+    return 2 * math.pi * R
 
-# Член ряда при четном n
-def Fi(n, t, x):
+# Коэффициент при n^2 в экспоненте
+def coef_n2(k, c, R):
+    l = make_l(R)
+    return k / c * (2 * math.pi / l) ** 2  # = k / (c * R^2)
+
+# Константный член в экспоненте (теплообмен с окруж. средой)
+def coef_const(alpha, c, R):
+    return (2 * alpha) / (c * R)
+
+# Функция Фурье-компоненты с номером n
+def Fi(n, t, x, R, k, c, alpha):
+    l = make_l(R)
     if n == 0:
-        return math.exp(-0.00115 * t)
-    Bn = 2 / (math.pi * n)
-    return Bn * np.sin(n * x / 4) * np.exp(-t * (coef_n2 * (n ** 2) + coef_const))
+        return 0.5 * math.exp(-coef_const(alpha, c, R) * t)
+    Bn = -((-1)**n - 1) / (math.pi * n)
+    return abs(Bn) * np.exp(-t * (coef_n2(k, c, R) * n ** 2 + coef_const(alpha, c, R)))
 
-# Частичная сумма ряда до N (включительно), по четным n
-def SUM(x, t, N):
-    result = Fi(0, t, x)  # нулевой член
-    for n in range(2, N + 1, 2):
-        result += Fi(n, t, x)
+# Частичная сумма ряда
+def SUM(x, t, N, R, k, c, alpha):
+    result = Fi(0, t, x, R, k, c, alpha)
+    for n in range(1, N + 1):
+        result += Fi(n, t, x, R, k, c, alpha)
     return result
 
-# Вычисление N, начиная с n=2, при котором последний член меньше eps
-def num_of_iter(eps, t, x):
-    n = 2
-    while abs(Fi(n, t, x)) > eps:
+# Подбор N по модулю одного члена
+def num_of_iter(eps, t, x, R, k, c, alpha):
+    n = 1
+    while abs(Fi(n, t, x, R, k, c, alpha)) > eps:
         n += 2
     return n
 
-# Экспериментально уточнённое N
-def num_of_iter_exp(eps, t, x):
-    Neps = num_of_iter(eps, t, x)
+# Уточнённый подбор N по разности сумм
+def num_of_iter_exp(eps, t, x, R, k, c, alpha):
+    Neps = num_of_iter(eps, t, x, R, k, c, alpha)
     Nexp = Neps
-    while abs(SUM(x, t, Neps) - SUM(x, t, Nexp)) <= eps and Nexp > 0:
-        Nexp -= 2
-    return Nexp + 2
+    while abs(SUM(x, t, Neps, R, k, c, alpha) - SUM(x, t, Nexp, R, k, c, alpha)) <= eps and Nexp > 0:
+        Nexp -= 1
+    return Nexp + 1
 
 # Пример использования:
 x = 4  # например
 for t in [0.1, 5, 20]:
     print(f"t = {t}")
     for eps in [1e-2, 1e-3, 1e-4, 1e-5, 1e-6, 1e-7, 1e-8]:
-        Neps = num_of_iter(eps, t, x)
-        Nexp = num_of_iter_exp(eps, t, x)
-        print(f"eps = {eps:.0e}, Neps = {Neps}, Nexp = {Nexp}")
+        Neps = num_of_iter(eps, t, x, R, k, c, alpha)
+        Nexp = num_of_iter_exp(eps, t, x, R, k, c, alpha)
+        FU = Fi(Neps, t, x, R, k, c, alpha)
+        print(f"eps = {eps:.0e}, Neps = {Neps}, Nexp = {Nexp}, FU = {FU}")
