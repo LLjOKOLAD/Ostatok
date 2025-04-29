@@ -26,7 +26,7 @@ def Fi(n, t, x, R, k, c, alpha):
     l = make_l(R)
     if n == 0:
         return 0.5 * math.exp(-coef_const(alpha, c, R) * t)
-    Bn = -((-1)**n - 1) / (math.pi * n)
+    Bn = -((-1)**n - 1) / (math.pi * n**2)
     return abs(Bn) * np.exp(-t * (coef_n2(k, c, R) * n ** 2 + coef_const(alpha, c, R)))
 
 # Частичная сумма ряда
@@ -36,11 +36,17 @@ def SUM(x, t, N, R, k, c, alpha):
         result += Fi(n, t, x, R, k, c, alpha)
     return result
 
+
+def FI(n,t):
+    exponent = t * ((2 * alpha) / (c * R) + (k * n ** 2) / (c * R ** 2))
+    denominator = (n + 1) ** 3 * k * math.pi * t * math.exp(exponent)
+    return (c * R ** 2) / denominator
+
 # Подбор N по модулю одного члена
 def num_of_iter(eps, t, x, R, k, c, alpha):
     n = 1
-    while abs(Fi(n, t, x, R, k, c, alpha)) > eps:
-        n += 2
+    while abs(FI(n,t)) >= eps:
+        n += 1
     return n
 
 # Уточнённый подбор N по разности сумм
@@ -58,5 +64,4 @@ for t in [0.1, 5, 20]:
     for eps in [1e-2, 1e-3, 1e-4, 1e-5, 1e-6, 1e-7, 1e-8]:
         Neps = num_of_iter(eps, t, x, R, k, c, alpha)
         Nexp = num_of_iter_exp(eps, t, x, R, k, c, alpha)
-        FU = Fi(Neps, t, x, R, k, c, alpha)
-        print(f"eps = {eps:.0e}, Neps = {Neps}, Nexp = {Nexp}, FU = {FU}")
+        print(f"eps = {eps:.0e}, Neps = {Neps}, Nexp = {Nexp}")

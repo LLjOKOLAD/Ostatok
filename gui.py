@@ -37,29 +37,27 @@ def SUM(x, t, N, R, k, c, alpha):
         result += Fi(n, t, x, R, k, c, alpha)
     return result
 
+def FI(n,t, R, k, c, alpha):
+    exponent = t * ((2 * alpha) / (c * R) + (k * n ** 2) / (c * R ** 2))
+    denominator = (n + 1) ** 3 * k * math.pi * t * math.exp(exponent)
+    return (c * R ** 2) / denominator
 
 # Подбор N по модулю одного члена ряда
-def num_of_iter(eps, t, x, R, k, c, alpha):
+def num_of_iter(eps, t, R, k, c, alpha):
     MAX_N = 5000
     if t == 0:
         # При t=0 подбор N невозможен, ставим большое значение по умолчанию
         return MAX_N
     n = 1
-    while True:
-        l = make_l(R)
-        Bn = abs((-((-1)**n - 1)) / (math.pi * n))
-        exp_factor = math.exp(-t * (coef_n2(k, c, R) * n**2 + coef_const(alpha, c, R)))
-        term = Bn * exp_factor
-        if term <= eps:
-            break
-        n += 2  # только нечётные n
+    while abs(FI(n, t, R, k, c, alpha)) >= eps:
+        n += 1
         if n > MAX_N:
             break
     return n
 
 # Уточнённый подбор N по разности сумм
 def num_of_iter_exp(eps, t, x, R, k, c, alpha):
-    Neps = num_of_iter(eps, t, x, R, k, c, alpha)
+    Neps = num_of_iter(eps, t, R, k, c, alpha)
     Nexp = Neps
     while abs(SUM(x, t, Neps, R, k, c, alpha) - SUM(x, t, Nexp, R, k, c, alpha)) <= eps and Nexp > 0:
         Nexp -= 2
@@ -69,7 +67,7 @@ def num_of_iter_exp(eps, t, x, R, k, c, alpha):
 def partial_sum(x, t, R, k, c, alpha, N=None, eps=None):
     MIN_N = 5  # Минимальное количество членов для адекватного приближения
     if eps is not None:
-        N = max(num_of_iter(eps, t, x, R, k, c, alpha), MIN_N)
+        N = max(num_of_iter(eps, t, R, k, c, alpha), MIN_N)
     result = Fi(0, t, x, R, k, c, alpha)
     for n in range(1, N + 1):
         result += Fi(n, t, x, R, k, c, alpha)
