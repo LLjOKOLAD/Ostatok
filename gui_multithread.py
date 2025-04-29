@@ -36,6 +36,7 @@ def num_of_iter(eps, t, R, k, c, alpha, MAX_N=10000):
     if t == 0:
         return MAX_N
     n = 1
+
     while True:
         Bn = abs((-((-1) ** n - 1)) / (math.pi * n))
         exp_factor = math.exp(-t * (coef_n2(k, c, R) * n ** 2 + coef_const(alpha, c, R)))
