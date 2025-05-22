@@ -26,10 +26,8 @@ def Fi(n, t, x, R, k, c, alpha):
     l = make_l(R)  # l = 2πR
     if n == 0:
         return 0.5 * math.exp(-coef_const(alpha, c, R) * t)
-    if n % 2 == 0:
-        An = 0
-    else:
-        An = -8 / (math.pi**2 * n**2)
+
+    An = (2*((-1)**n)-2)/((math.pi**2) * n**2)
 
     omega_n = 2 * math.pi * n / l  # правильно масштабируем частоту
 
@@ -59,7 +57,7 @@ def num_of_iter(eps, t, x, R, k, c, alpha):
         term = Bn * exp_factor
         if term <= eps:
             break
-        n += 2  # только нечётные n
+        n += 1  # только нечётные n
         if n > MAX_N:
             break
     return n

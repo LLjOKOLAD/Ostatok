@@ -39,7 +39,7 @@ def SUM(x, t, N, R, k, c, alpha):
 
 def FI(n,t, R, k, c, alpha):
     exponent = t * ((2 * alpha) / (c * R) + (k * n ** 2) / (c * R ** 2))
-    denominator = (n + 1) ** 3 * k * math.pi * t * math.exp(exponent)
+    denominator = (n + 1) ** 2 * k * math.pi * t * math.exp(exponent)
     return (c * R ** 2) / denominator
 
 # Подбор N по модулю одного члена ряда
@@ -60,8 +60,8 @@ def num_of_iter_exp(eps, t, x, R, k, c, alpha):
     Neps = num_of_iter(eps, t, R, k, c, alpha)
     Nexp = Neps
     while abs(SUM(x, t, Neps, R, k, c, alpha) - SUM(x, t, Nexp, R, k, c, alpha)) <= eps and Nexp > 0:
-        Nexp -= 2
-    return Nexp + 2
+        Nexp -= 1
+    return Nexp + 1
 
 # Общая функция частичной суммы
 def partial_sum(x, t, R, k, c, alpha, N=None, eps=None):
@@ -216,6 +216,9 @@ ttk.Label(control_frame, text="Точность ε:").pack(anchor="w")
 eps_entry.pack(anchor="w")
 
 ttk.Button(control_frame, text="Построить график", command=run_plot).pack(pady=20)
+# Кнопка для вызова окна режима "Оценка N"
+ttk.Button(control_frame, text="Режим оценки N", command=lambda: open_n_mode()).pack(pady=(10, 5))
+
 ttk.Button(control_frame, text="Настроить параметры", command=toggle_constants).pack(pady=(10, 5))
 
 constants_frame = ttk.Frame(control_frame)
@@ -226,6 +229,64 @@ def add_const_input(label, default):
     entry.insert(0, default)
     entry.pack(anchor="w")
     return entry
+
+def open_n_mode():
+    n_window = tk.Toplevel()
+    n_window.title("Оценка числа членов ряда N")
+    n_window.geometry("700x600")
+
+    input_frame = ttk.Frame(n_window, padding=10)
+    input_frame.pack(fill="x")
+
+    # Ввод x
+    ttk.Label(input_frame, text="x:").grid(row=0, column=0, sticky="w")
+    x_entry = ttk.Entry(input_frame, width=15)
+    x_entry.insert(0, "4.0")
+    x_entry.grid(row=0, column=1, sticky="w")
+
+    # Ввод списка t
+    ttk.Label(input_frame, text="Значения t (через запятую):").grid(row=1, column=0, columnspan=2, sticky="w")
+    t_entry = ttk.Entry(input_frame, width=50)
+    t_entry.insert(0, "0.01, 0.1, 5, 20")
+    t_entry.grid(row=2, column=0, columnspan=2, sticky="w")
+
+    # Ввод списка eps
+    ttk.Label(input_frame, text="Значения ε (через запятую):").grid(row=3, column=0, columnspan=2, sticky="w")
+    eps_entry = ttk.Entry(input_frame, width=50)
+    eps_entry.insert(0, "1e-2, 1e-3, 1e-4, 1e-5, 1e-6, 1e-7, 1e-8, 1e-9, 1e-10, 1e-11")
+    eps_entry.grid(row=4, column=0, columnspan=2, sticky="w")
+
+    # Кнопка запуска
+    ttk.Button(input_frame, text="Выполнить расчёт", command=lambda: run_n_test()).grid(row=5, column=0, columnspan=2, pady=10)
+
+    # Поле для вывода результатов
+    output = tk.Text(n_window, wrap="none", font=("Courier", 10))
+    output.pack(fill="both", expand=True)
+
+    def run_n_test():
+        try:
+            x = float(x_entry.get())
+            t_vals = [float(s.strip()) for s in t_entry.get().split(",")]
+            eps_vals = [float(s.strip()) for s in eps_entry.get().split(",")]
+            R = float(R_entry.get())
+            alpha = float(alpha_entry.get())
+            k = float(k_entry.get())
+            c = float(c_entry.get())
+
+            output.delete(1.0, tk.END)
+            output.insert(tk.END, f"x = {x}\n\n")
+
+            for t in t_vals:
+                output.insert(tk.END, f"t = {t:.5g}\n")
+                for eps in eps_vals:
+                    Neps = num_of_iter(eps, t, R, k, c, alpha)
+                    Nexp = num_of_iter_exp(eps, t, x, R, k, c, alpha)
+                    output.insert(tk.END, f"  eps = {eps:.0e},  Neps = {Neps:<5},  Nexp = {Nexp:<5}\n")
+                output.insert(tk.END, "\n")
+
+        except Exception as e:
+            messagebox.showerror("Ошибка", f"Ошибка ввода или расчёта:\n{e}")
+
 
 R_entry = add_const_input("Радиус R:", "4")
 alpha_entry = add_const_input("α:", "0.003")
