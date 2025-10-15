@@ -10,7 +10,7 @@ class ExplicitSchemeGUI:
     def __init__(self):
         # Параметры по умолчанию
         self.alpha = 0.003
-        self.R = 3.0
+        self.R = 4.0
         self.T = 30.0
         self.I = 50
         self.K = 1500
@@ -92,7 +92,6 @@ class ExplicitSchemeGUI:
         self.alpha_entry = add_field("α:", self.alpha)
         self.k_entry = add_field("k:", self.k)
         self.c_entry = add_field("c:", self.c)
-        self.r0_entry = add_field("r₀:", self.r0)
         self.I_entry = add_field("Число узлов I:", self.I)
         self.K_entry = add_field("Шагов по времени K:", self.K)
         self.T_entry = add_field("Время моделирования T:", self.T)
@@ -127,7 +126,7 @@ class ExplicitSchemeGUI:
             self.alpha = float(self.alpha_entry.get())
             self.k = float(self.k_entry.get())
             self.c = float(self.c_entry.get())
-            self.r0 = float(self.r0_entry.get())
+            self.r0 = float(self.R_entry.get())
             self.I = int(self.I_entry.get())
             self.K = int(self.K_entry.get())
             self.T = float(self.T_entry.get())
